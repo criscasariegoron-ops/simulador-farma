@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Farmacología USC</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0e1a;--surface:#111827;--surface2:#1a2235;--accent:#3b82f6;--correct:#22c55e;--wrong:#ef4444;--text:#e2e8f0;--muted:#64748b;--border:#1e2d45}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center}
+.glow{position:fixed;top:-200px;left:50%;transform:translateX(-50%);width:600px;height:400px;background:radial-gradient(ellipse,rgba(59,130,246,.12) 0%,transparent 70%);pointer-events:none;z-index:0}
+.container{position:relative;z-index:1;width:100%;max-width:780px;padding:20px}
+header{text-align:center;padding:40px 0 30px}
+.logo{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+h1{font-family:'Syne',sans-serif;font-size:clamp(28px,5vw,44px);font-weight:800;line-height:1.1;background:linear-gradient(135deg,#e2e8f0 0%,#93c5fd 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.subtitle{font-size:14px;color:var(--muted);margin-top:8px}
+#tema-screen{animation:fadeUp .4s ease}
+.tema-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px}
+@media(max-width:540px){.tema-grid{grid-template-columns:1fr}}
+.tema-btn{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;cursor:pointer;text-align:left;transition:all .2s;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;display:flex;align-items:center;gap:12px}
+.tema-btn:hover{border-color:var(--accent);background:var(--surface2);transform:translateY(-2px)}
+.tema-num{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--accent);min-width:28px}
+.tema-name{font-weight:500;line-height:1.3}
+.tema-count{font-size:11px;color:var(--muted);margin-top:2px}
+.btn-todos{width:100%;margin-top:10px;background:linear-gradient(135deg,var(--accent),#6366f1);border:none;border-radius:12px;padding:16px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:white;letter-spacing:1px;text-transform:uppercase;transition:all .2s}
+.btn-todos:hover{opacity:.9;transform:translateY(-2px)}
+#quiz-screen{display:none;animation:fadeUp .4s ease}
+.quiz-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.back-btn{background:transparent;border:1px solid var(--border);border-radius:8px;padding:8px 14px;color:var(--muted);cursor:pointer;font-size:13px;transition:all .2s;font-family:'DM Sans',sans-serif}
+.back-btn:hover{border-color:var(--accent);color:var(--text)}
+.stats-bar{display:flex;gap:16px;font-size:13px;color:var(--muted)}
+.stat{display:flex;align-items:center;gap:5px}
+.stat-val{font-weight:700;color:var(--text)}
+.correct-val{color:var(--correct)}
+.wrong-val{color:var(--wrong)}
+.progress-bar{width:100%;height:3px;background:var(--surface2);border-radius:2px;margin-bottom:24px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#6366f1);border-radius:2px;transition:width .4s ease}
+.tema-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:8px}
+.pregunta-num{font-family:'Syne',sans-serif;font-size:12px;color:var(--muted);margin-bottom:14px}
+.question-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:16px}
+.question-text{font-size:16px;line-height:1.6;font-weight:500;margin-bottom:24px}
+.options{display:flex;flex-direction:column;gap:10px}
+.option-btn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 18px;cursor:pointer;text-align:left;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);transition:all .2s;display:flex;align-items:flex-start;gap:12px}
+.option-btn:hover:not(:disabled){border-color:var(--accent);background:rgba(59,130,246,.08)}
+.option-btn:disabled{cursor:default}
+.option-btn.correct{border-color:var(--correct);background:rgba(34,197,94,.12)}
+.option-btn.wrong{border-color:var(--wrong);background:rgba(239,68,68,.12)}
+.option-letter{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--muted);min-width:20px;margin-top:1px}
+.option-btn.correct .option-letter{color:var(--correct)}
+.option-btn.wrong .option-letter{color:var(--wrong)}
+.feedback-box{display:none;border-radius:12px;padding:16px 20px;margin-bottom:16px;font-size:14px;line-height:1.5;animation:fadeUp .3s ease}
+.feedback-box.show{display:block}
+.feedback-box.correct-fb{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#86efac}
+.feedback-box.wrong-fb{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5}
+.feedback-box strong{display:block;margin-bottom:4px;font-size:15px}
+.action-row{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.btn-next{background:linear-gradient(135deg,var(--accent),#6366f1);border:none;border-radius:10px;padding:12px 28px;color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;display:none}
+.btn-next:hover{opacity:.9}
+.btn-next.show{display:block}
+.btn-stop{background:transparent;border:1px solid var(--border);border-radius:10px;padding:12px 20px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;display:none}
+.btn-stop:hover{border-color:var(--wrong);color:var(--wrong)}
+.btn-stop.show{display:block}
+#result-screen{display:none;text-align:center;animation:fadeUp .4s ease;padding:40px 0}
+.result-circle{width:140px;height:140px;border-radius:50%;border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;flex-direction:column;margin:0 auto 24px;background:var(--surface)}
+.result-pct{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;background:linear-gradient(135deg,#e2e8f0,#93c5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.result-label{font-size:12px;color:var(--muted)}
+.result-stats{display:flex;justify-content:center;gap:30px;margin:20px 0 30px;flex-wrap:wrap}
+.rs{text-align:center}
+.rs-val{font-family:'Syne',sans-serif;font-size:28px;font-weight:800}
+.rs-lbl{font-size:12px;color:var(--muted)}
+.btn-restart{background:linear-gradient(135deg,var(--accent),#6366f1);border:none;border-radius:12px;padding:14px 32px;color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;margin:6px}
+.btn-restart:hover{opacity:.9}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="container">
+<header>
+<div class="logo">USC · Medicina · 2021–2025</div>
+<h1>Simulador Farmacología</h1>
+<p class="subtitle">Recopilatorio por temas · 223 preguntas</p>
+</header>
+<div id="tema-screen">
+<div class="tema-grid" id="tema-grid"></div>
+<button class="btn-todos" onclick="startQuiz('todos')">▶ Todos los temas mezclados</button>
+</div>
+<div id="quiz-screen">
+<div class="quiz-header">
+<button class="back-btn" onclick="goHome()">← Temas</button>
+<div class="stats-bar">
+<div class="stat">✓ <span class="stat-val correct-val" id="cnt-ok">0</span></div>
+<div class="stat">✗ <span class="stat-val wrong-val" id="cnt-ko">0</span></div>
+<div class="stat">📋 <span class="stat-val" id="cnt-tot">0</span></div>
+</div>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+<div class="tema-label" id="quiz-tema-label"></div>
+<div class="pregunta-num" id="quiz-ref"></div>
+<div class="question-card">
+<div class="question-text" id="question-text"></div>
+<div class="options" id="options-container"></div>
+</div>
+<div class="feedback-box" id="feedback-box"></div>
+<div class="action-row">
+<button class="btn-stop" id="btn-stop" onclick="showResults()">Parar y ver resultados</button>
+<button class="btn-next" id="btn-next" onclick="nextQuestion()">Siguiente →</button>
+</div>
+</div>
+<div id="result-screen">
+<div class="result-circle">
+<div class="result-pct" id="res-pct">—</div>
+<div class="result-label">aciertos</div>
+</div>
+<div class="result-stats">
+<div class="rs"><div class="rs-val" style="color:var(--correct)" id="res-ok">0</div><div class="rs-lbl">Correctas</div></div>
+<div class="rs"><div class="rs-val" style="color:var(--wrong)" id="res-ko">0</div><div class="rs-lbl">Incorrectas</div></div>
+<div class="rs"><div class="rs-val" id="res-tot">0</div><div class="rs-lbl">Respondidas</div></div>
+</div>
+<button class="btn-restart" onclick="goHome()">← Volver a temas</button>
+<button class="btn-restart" onclick="retryTema()">↺ Repetir tema</button>
+</div>
+</div>
+<script>
+const TEMAS=[{id:1,name:"Principios generales de acción"},{id:2,name:"SNA y placa motora"},{id:3,name:"Inflamación, dolor y fiebre"},{id:4,name:"Farmacología del SNC"},{id:5,name:"Farmacología cardiovascular"},{id:6,name:"Farmacología de la sangre"},{id:7,name:"Aparato respiratorio"},{id:8,name:"Aparato digestivo"},{id:9,name:"Sistema endocrino"},{id:10,name:"Neoplasia e inmunidad"},{id:11,name:"Procesos infecciosos y antiparasitarios"}];
+const Q=[
+// PARTE I
+{t:1,r:"17(2025)",q:"¿Cuál es la concentración mínima eficaz de un fármaco?",o:["Aquella por debajo de la cual suelen observarse efectos adversos","Aquella por encima de la cual suelen observarse efectos terapéuticos","Aquella por encima de la cual suelen observarse efectos tóxicos","Aquella por debajo de la cual suelen observarse efectos terapéuticos"],a:1},
+{t:1,r:"26(2025)",q:"Para que dos formulaciones con un mismo principio activo se consideren especialidad farmacéutica genérica debe demostrarse:",o:["Que son biosimilares","Que tienen la misma vida media","Que son bioequivalentes","Que tienen la misma duración de efecto"],a:2},
+{t:1,r:"29(2025)",q:"La biodisponibilidad sistémica de un fármaco:",o:["No depende de las condiciones fisiopatológicas de cada paciente","No depende de la vía de administración del fármaco","No se ve afectada por las enzimas digestivas","Está relacionada con la cantidad de fármaco que alcanza la circulación sistémica en estado inalterado"],a:3},
+{t:1,r:"46(2025)",q:"Un medicamento con semivida de 12 horas se administra por infusión i.v. continua. ¿Cuál se aproxima mejor al tiempo para alcanzar el equilibrio?",o:["20 horas","33 horas","50 horas","60 horas"],a:3},
+{t:1,r:"47(2025)",q:"La afinidad de un fármaco agonista:",o:["Se calcula como la inversa de la dosis eficaz cincuenta","Se calcula como el menos logaritmo de la dosis eficaz cincuenta","Es el cincuenta por ciento de la respuesta de un fármaco","Es igual a la dosis eficaz cincuenta"],a:0},
+{t:1,r:"48(2025)",q:"La capacidad de un receptor para discriminar entre una molécula de ligando de otra se denomina:",o:["Actividad intrínseca","Potencia del receptor","Especificidad","Afinidad"],a:2},
+{t:1,r:"49(2025)",q:"Si la histamina y la adrenalina actúan sobre distintos receptores y un mismo órgano con efectos cualitativamente opuestos, el antagonismo entre ellos es:",o:["Competitivo","No competitivo","Químico","Fisiológico"],a:3},
+{t:1,r:"77(2025)",q:"Toda sustancia química de estructura conocida utilizada en tratamiento, curación, prevención o diagnóstico se denomina:",o:["Fármaco","Principio activo (API)","Medicamento","Las opciones a y b son correctas"],a:3},
+{t:1,r:"78(2025)",q:"¿Cuál es correcta sobre el paso de fármacos por difusión pasiva?",o:["Los ácidos débiles atraviesan mejor cuando el pH es más alcalino","Las bases débiles atraviesan mejor cuando el pH es más ácido","Los ácidos débiles atraviesan mejor cuando el pH es más ácido","Ninguna de las anteriores es correcta"],a:2},
+{t:1,r:"79(2025)",q:"¿Cuál de las siguientes vías de administración enteral evita TOTALMENTE el primer paso hepático?",o:["Oral","Rectal","Sublingual","Ninguna de las anteriores es correcta"],a:2},
+{t:1,r:"80(2025)",q:"¿Cuál es cierta sobre la unión de fármacos a proteínas plasmáticas?",o:["La fracción unida se elimina fácilmente por filtración glomerular","En hipoproteinemia puede aumentar la actividad y la toxicidad del fármaco","No es saturable ni competitiva","No es reversible"],a:1},
+{t:1,r:"81(2025)",q:"Dosis i.v. de carga del fármaco X (Vd=2 L/kg, paciente 60 kg) para concentración plasmática de 0,5 mg/L:",o:["40 mg","80 mg","30 mg","60 mg"],a:3},
+{t:1,r:"82(2025)",q:"¿En cuál de las siguientes vías de administración se alcanza mayor biodisponibilidad?",o:["Subcutánea","Oral","Intramuscular","Intraósea"],a:3},
+{t:1,r:"83(2025)",q:"¿Qué sistema de transporte predomina en el paso de fármacos a la leche materna?",o:["Transporte activo","Difusión pasiva","Pinocitosis","Difusión facilitada a través de proteínas"],a:1},
+{t:1,r:"27(2023)",q:"Un fármaco con semivida de 10h, ¿cuándo alcanza el equilibrio?",o:["20h","33h","50h","60h"],a:2},
+{t:1,r:"28(2023)",q:"¿Cuál es la dosis para un paciente de 70 kg con Vd=1 L/kg y Cd=2,5 mg/L?",o:["175 mg","70 mg","28 mg","40 mg"],a:0},
+{t:1,r:"29(2023)",q:"Señale la FALSA sobre la biodisponibilidad:",o:["Cantidad absorbida por vía oral","Cantidad absorbida por una vía comparada con la vía iv","Cantidad en la circulación sistémica","Biodisponibilidad iv es igual al 100%"],a:0},
+{t:1,r:"30(2023)",q:"La capacidad por la que el receptor distingue sustancias se llama:",o:["Actividad intrínseca","Potencia","Especificidad","Afinidad"],a:2},
+{t:1,r:"31(2023)",q:"Un fármaco B activa el metabolismo de otro fármaco A. Señale la correcta:",o:["B se elimina despacio","B se elimina antes","A se elimina despacio","A se elimina antes"],a:3},
+{t:1,r:"32(2023)",q:"2 fármacos agonistas se unen a distintos receptores y tienen distinto efecto. ¿Qué tipo de antagonismo hay?",o:["Competitivo","No competitivo","Químico","Fisiológico"],a:3},
+{t:1,r:"1(2022)",q:"¿Qué parte de la farmacología estudia lo que el fármaco hace al organismo (efectos bioquímicos, fisiológicos y mecanismo de acción)?",o:["Farmacodinamia","Farmacogenética","Farmacognosia","Farmacocinética"],a:0},
+{t:1,r:"2(2022)",q:"¿Cuál de las siguientes afirmaciones es cierta?",o:["Los más ionizados atraviesan mejor las membranas por difusión pasiva","Los ácidos débiles se ionizan menos en pH más básico y son más liposolubles","Los ácidos débiles se ionizan menos en pH más ácido y atraviesan mejor las membranas por difusión pasiva","El grado de ionización no influye en la liposolubilidad"],a:2},
+{t:1,r:"3(2022)",q:"Biodisponibilidad cuando la vía es intravenosa:",o:["f = 0","f = 0,5","f = 1","f > 1"],a:2},
+{t:1,r:"4(2022)",q:"Vd morfina=0,5 L/kg. Calcular la dosis si el peso es 70 kg y la concentración plasmática 0,3 mg/L:",o:["5 mg","10,5 mg","21 mg","35 mg"],a:1},
+{t:1,r:"5(2022)",q:"Algunos metabolitos conjugados excretados por vía biliar se reactivan en el intestino y se reabsorben. Este proceso se denomina:",o:["Fenómeno de primer paso","Circulación enterohepática","Reacción de fase II","Ninguna de las anteriores"],a:1},
+{t:1,r:"6(2022)",q:"El proceso por el que un fármaco absorbido en el intestino llega al hígado por circulación portal y sufre metabolismo se denomina:",o:["Reacción metabólica de Fase I","Circulación enterohepática","Fenómeno de primer paso","Ninguna de las anteriores"],a:2},
+{t:1,r:"51(2022)",q:"Semivida de 10 h, vía intravenosa. ¿Tiempo en alcanzar el equilibrio estacionario?",o:["20 horas","33 horas","50 horas","60 horas"],a:2},
+{t:1,r:"52(2022)",q:"Individuo de 70 kg. Volumen de distribución=1 L/kg y concentración plasmática de 2,5 mg/L. Dosis:",o:["175 mg","70 mg","28 mg","10 mg"],a:0},
+{t:1,r:"53(2022)",q:"Especialidad genérica:",o:["Biosimilar","Igual vida media","Bioequivalentes","Igual duración"],a:2},
+{t:1,r:"54(2022)",q:"La capacidad de un receptor para discriminar entre moléculas de ligando se denomina:",o:["Actividad intrínseca","Potencia del receptor","Afinidad","Especificidad"],a:3},
+{t:1,r:"55(2022)",q:"La afinidad del agonista:",o:["Cálculo inverso a la dosis eficaz 50","–log dosis eficaz 50","50% respuesta fármaco","Igual dosis"],a:0},
+{t:1,r:"56(2022)",q:"Las interacciones farmacológicas:",o:["Efecto indeseado siempre en pacientes","Depende sólo de factores individuales","Fármaco incrementa o disminuye el efecto","Incompatibilidad físico-química"],a:2},
+{t:1,r:"57(2022)",q:"Señala la respuesta verdadera sobre reacciones adversas:",o:["Las de tipo A no son predecibles, son raras y pueden ser mortales","Las de tipo B no son predecibles, son raras y pueden llegar a ser mortales","Las de tipo A se deben a la idiosincrasia del individuo","Son correctas a y c"],a:1},
+{t:1,r:"59(2021)",q:"¿Cuál de las siguientes afirmaciones sobre la unión de fármacos a proteínas plasmáticas es FALSA?",o:["Constituye una cifra estable para cada fármaco","Sólo la fracción libre es la activa","Es una unión reversible","No es una unión saturable"],a:3},
+{t:1,r:"60(2021)",q:"Las interacciones farmacológicas pueden producirse por:",o:["Modificaciones en el pH urinario","Desplazamiento de unión a proteína plasmática","Modificación del pH gástrico","Todas las anteriores son correctas"],a:3},
+{t:1,r:"63(2021)",q:"Para que dos formulaciones con un mismo principio activo se consideren especialidad farmacéutica genérica:",o:["Que son biosimilares","Que tienen la misma vida media","Que son bioequivalentes","Que tienen la misma duración del efecto"],a:2},
+{t:1,r:"64(2021)",q:"La disciplina que estudia los procesos de liberación, absorción, distribución, metabolismo y eliminación de los fármacos se denomina:",o:["Farmacodinamia","Farmacognosia","Farmacocinética","Cronofarmacología"],a:2},
+{t:1,r:"65(2021)",q:"El proceso por el que un fármaco absorbido llega al hígado por circulación portal y sufre metabolismo se denomina:",o:["Reacción metabólica de Fase I","Circulación enterohepática","Fenómeno de primer paso","Ninguna de las opciones anteriores es correcta"],a:2},
+{t:1,r:"66(2021)",q:"¿Cuál de las siguientes afirmaciones es cierta?",o:["Los más ionizados atraviesan mejor las membranas","Los ácidos débiles se ionizan más en pH ácido y son menos liposolubles","Las bases débiles se ionizan menos en pH más básico, son más liposolubles y atraviesan mejor las membranas","Todas son falsas"],a:2},
+{t:1,r:"67(2021)",q:"¿Qué parte de la farmacología estudia lo que el fármaco le hace al organismo?",o:["La farmacodinamia","La farmacogenética","La farmacognosia","La farmacocinética"],a:0},
+{t:1,r:"69(2021)",q:"Biodisponibilidad cuando es intravenoso:",o:["f = 0","f = 0,5","f = 1","f > 1"],a:2},
+{t:1,r:"74(2021)",q:"La inversa de la dosis eficaz cincuenta de un fármaco agonista define la:",o:["Potencia","Afinidad","Actividad intrínseca","Índice terapéutico"],a:1},
+{t:1,r:"75(2021)",q:"La capacidad de un receptor para discriminar entre moléculas de ligando se denomina:",o:["Actividad intrínseca","Potencia del receptor","Especificidad","Afinidad"],a:2},
+// PARTE II
+{t:2,r:"84(2025)",q:"¿Sobre qué tipo de receptor adrenérgico actúa la adrenalina y NO la noradrenalina?",o:["α1","α2","β1","β2"],a:3},
+{t:2,r:"85(2025)",q:"¿Cuál de los siguientes es un efecto de los agonistas β2 adrenérgicos (salbutamol)?",o:["Broncodilatación","Miosis","Vasoconstricción","Contracción del útero a término"],a:0},
+{t:2,r:"86(2025)",q:"¿Cuál de los siguientes es un efecto de la atropina?",o:["Broncoconstricción","Aumenta la motilidad intestinal","Aumenta la frecuencia cardiaca","Aumenta la secreción salival"],a:2},
+{t:2,r:"87(2025)",q:"¿Cuál de los siguientes fármacos es un agonista β1 adrenérgico selectivo?",o:["Salbutamol","Terbutalina","Dobutamina","Oximetazolina"],a:2},
+{t:2,r:"88(2025)",q:"¿Cuál de los siguientes relajantes musculares inhibe la liberación de acetilcolina en la unión neuromuscular?",o:["Baclofeno","Toxina botulínica","Vecuronio","Dantroleno"],a:1},
+{t:2,r:"89(2025)",q:"En el bloqueo neuromuscular por bloqueantes no despolarizantes, ¿qué músculos se afectan antes?",o:["Músculos extraoculares","Músculos del cuello","Músculos de extremidades","Diafragma"],a:0},
+{t:2,r:"5(2023)",q:"¿Cuál de las siguientes es una indicación de los fármacos antagonistas alfa-1 adrenérgicos?",o:["Hipertrofia benigna de próstata","Bradicardia","Broncoconstricción","Hipotensión"],a:0},
+{t:2,r:"18(2023)",q:"La atropina es un antagonista colinérgico muscarínico. ¿Verdadero o falso?",o:["Verdadero","Falso"],a:0},
+{t:2,r:"25(2023)",q:"La adrenalina es cierto que:",o:["Produce broncoconstricción","Es broncodilatadora","Produce miosis","Disminuye la frecuencia cardiaca"],a:1},
+{t:2,r:"33(2023)",q:"El antagonista colinérgico muscarínico:",o:["Aumenta la motilidad intestinal","Disminuye la motilidad intestinal","No tiene efecto sobre la motilidad","Produce diarrea"],a:1},
+{t:2,r:"7(2022)",q:"¿Cuál NO es efecto de la adrenalina?",o:["Vasoconstricción","Aumenta inotropismo","Disminuye la histamina","Broncoconstricción"],a:3},
+{t:2,r:"8(2022)",q:"¿Cuál de los siguientes fármacos es un antagonista alfa-adrenérgico?",o:["Prazosina","Tamsulosina","Fenoxibenzamina","Alprenolol"],a:3},
+{t:2,r:"9(2022)",q:"¿Qué fármaco disminuye la motilidad intestinal?",o:["Antagonistas colinérgicos muscarínicos","Antagonistas β1","Agonistas α1","Antagonistas α2"],a:0},
+{t:2,r:"10(2022)",q:"¿Cuál puede producir midriasis?",o:["Antagonista colinérgico muscarínico","Antagonista α1 adrenérgico","Agonista colinérgico nicotínico","Todas las anteriores son correctas"],a:0},
+{t:2,r:"11(2022)",q:"La secuencia de afectación del bloqueo neuromuscular por bloqueantes no despolarizantes:",o:["Se afectan antes cara y cuello que las extremidades inferiores","Se afecta antes el diafragma que los músculos del cuello","Se afectan antes los intercostales que los de las extremidades","Todas son falsas"],a:0},
+{t:2,r:"12(2022)",q:"¿Cuál produce broncodilatación?",o:["Agonista α1","Agonista β2","Agonista M3","Ninguno"],a:1},
+{t:2,r:"13(2022)",q:"Efecto del agonista β2:",o:["Relaja el útero","Aumenta la contractilidad","Aumenta la glucogenólisis","Todas son correctas"],a:3},
+{t:2,r:"14(2022)",q:"Mecanismo de acción del dantroleno:",o:["Antagonista competitivo a nivel neuromuscular","Evita la liberación de calcio del retículo endoplasmático en el músculo","Su unión al receptor NM activa un canal produciendo despolarización larga","Agonista de GABA B en el SNC"],a:1},
+{t:2,r:"15(2022)",q:"En cuanto a los bloqueantes musculares no despolarizantes:",o:["Antes de los músculos oculares que cara y cuello","Antes se recupera el diafragma que de las extremidades","Se revierte con inhibidores de acetilcolinesterasa","Todas son correctas"],a:3},
+{t:2,r:"37(2021)",q:"¿Cuál es el efecto de los agonistas beta-1 adrenérgicos a nivel del corazón?",o:["Aumento de la automaticidad","Aumento de la fuerza de contracción","Aumento de la frecuencia cardiaca","Todas son ciertas"],a:3},
+{t:2,r:"38(2021)",q:"La estimulación de receptores beta-2 adrenérgicos produce:",o:["Relajación del útero","Midriasis","Broncodilatación","Todas son ciertas"],a:3},
+{t:2,r:"39(2021)",q:"La estimulación de receptores colinérgicos muscarínicos produce:",o:["Broncoconstricción","Midriasis","Disminución de la síntesis de glucógeno","Todas son ciertas"],a:0},
+{t:2,r:"68(2021)",q:"Efecto de la adrenalina a nivel del corazón:",o:["Aumento de la automaticidad","Aumento de la fuerza de contracción","Aumento de la frecuencia cardiaca","Todas son ciertas"],a:3},
+{t:2,r:"70(2021)",q:"¿Cuál de los siguientes puede revertir los efectos de un bloqueante neuromuscular no despolarizante?",o:["Bloqueante muscular despolarizante","Inhibidor de la enzima acetil-colinesterasa","Antagonista colinérgico nicotínico","Ninguna de las opciones anteriores es correcta"],a:1},
+{t:2,r:"71(2021)",q:"La secuencia de afectación del bloqueo neuromuscular no despolarizante:",o:["Se afectan antes cara y cuello que extremidades inferiores","Se afecta antes el diafragma que los músculos del cuello","Se afectan antes los intercostales que los de las extremidades","Todas son falsas"],a:0}
+];
+const Q2=[
+// PARTE III
+{t:3,r:"1(2025)",q:"¿Cuál es INCORRECTA?",o:["Los AINE pueden producir un aumento de la presión arterial","El ibuprofeno puede disminuir la acción antiagregante plaquetaria del AAS","Los ISRS disminuyen el riesgo de sangrado de los AINE","Los AINE aumentan la toxicidad del Litio"],a:2},
+{t:3,r:"2(2025)",q:"Denominamos FAME biológicos dirigidos a:",o:["Los fármacos inhibidores de las JAK","Los agentes biológicos bloqueantes del TNF-α","Los FAME de primera línea","Los fármacos inhibidores de la IL-6"],a:0},
+{t:3,r:"3(2025)",q:"En el tratamiento de la artritis reumatoidea sin contraindicaciones, utilizamos al inicio:",o:["Metotrexato","Metotrexato más esteroides","Metotrexato más agentes biológicos","Agentes biológicos"],a:1},
+{t:3,r:"4(2025)",q:"Los opioides pueden inducir:",o:["Analgesia, diarrea, náuseas y vómitos, depresión respiratoria y miosis","Analgesia, estreñimiento, náuseas y vómitos, tos y miosis","Analgesia, estreñimiento, náuseas y vómitos, depresión respiratoria y miosis","Analgesia, diarrea, náuseas y vómitos, hipertensión y miosis"],a:2},
+{t:3,r:"5(2025)",q:"Es FALSO que los analgésicos opiáceos:",o:["Tienen acción sobre el SNC","Se usan para tratar dolor de forma moderada a gran intensidad","Algunos son tan potentes que se usan para la anestesia local","La morfina no tiene techo terapéutico"],a:2},
+{t:3,r:"30(2025)",q:"La acción antiagregante plaquetaria de los AINEs se debe a la inhibición de:",o:["Leucotrieno C4","Prostaglandina-E2","Tromboxano-A2","Interleucina IL-6"],a:2},
+{t:3,r:"31(2025)",q:"Excepto uno, todos los siguientes son efectos adversos de los AINEs:",o:["Diarreas","Hemorragias","Broncoespasmo","Úlceras gástricas"],a:0},
+{t:3,r:"32(2025)",q:"¿Cuál es la razón más convincente para evitar el celecoxib en una paciente con artritis reumatoide?",o:["Antecedentes de gota","Antecedentes de osteoporosis","Antecedentes de enfermedad ulcerosa péptica","Antecedentes de infarto de miocardio"],a:3},
+{t:3,r:"39(2025)",q:"¿Qué fármaco podría usarse para disminuir la tasa de producción de ácido úrico?",o:["Alopurinol","Colchicina","Hidroxicloroquina","Probenecid"],a:0},
+{t:3,r:"40(2025)",q:"Sobredosis accidental de Paracetamol. ¿Cuál es la causa más probable de muerte?",o:["Arritmia","Accidente vascular cerebral hemorrágico","Insuficiencia hepática","Insuficiencia respiratoria"],a:2},
+{t:3,r:"12(2023)",q:"¿Cómo actúan la histamina y la protamina entre sí?",o:["Antagonismo competitivo","Antagonismo no competitivo","Antagonismo químico","Antagonismo fisiológico"],a:2},
+{t:3,r:"23(2023)",q:"Es FALSO que los analgésicos opiáceos:",o:["Algunos son tan potentes que se usan para la anestesia local","Se usan para tratar dolor de forma moderada a gran intensidad","Tienen acción sobre el SNC","No tienen techo terapéutico"],a:0},
+{t:3,r:"34(2023)",q:"Diferencia entre antihistamínicos de 1ª y 2ª generación:",o:["La selectividad de receptores","Atraviesa la BHE","Eficacia frente al tratamiento de alergias","La potencia del bloqueo"],a:1},
+{t:3,r:"35(2023)",q:"Los antihistamínicos H1 de 1ª generación:",o:["No tienen efecto sedante","No se administran por vía oral","No tienen acción anticolinérgica","Son útiles en el tratamiento de vértigo o cinetosis"],a:3},
+{t:3,r:"36(2023)",q:"El paracetamol:",o:["Es antiinflamatorio potente","En altas dosis provoca úlcera","Es útil para dolor leve o moderado","En altas dosis no provoca toxicidad hepática"],a:2},
+{t:3,r:"37(2023)",q:"Señale la FALSA:",o:["Aspirina en altas dosis se utiliza como uricosúrico","AINES tienen efecto nefrotóxico","AINES provocan edema e hipertensión","Aspirina indicada en pacientes hemofílicos"],a:3},
+{t:3,r:"38(2023)",q:"Paciente con diabetes, dislipemia, hipertensión y cardiopatía. ¿Qué AINE administrarías?",o:["Coxib","Indometacina + omeprazol","Naproxeno + omeprazol","Naproxeno"],a:2},
+{t:3,r:"39(2023)",q:"Señale la FALSA:",o:["Ibuprofeno inhibe COX-1 y COX-2","Aspirina inhibe COX-1 plaquetaria","Coxib es fármaco selectivo de COX-2","Metamizol es potente antiinflamatorio"],a:3},
+{t:3,r:"40(2023)",q:"Señale la FALSA:",o:["AINES aumentan presión arterial","Ibuprofeno disminuye acción antiagregante del AAS","ISRS disminuyen riesgo de sangrado con AINE","AINES aumentan toxicidad del litio"],a:2},
+{t:3,r:"41(2023)",q:"¿Cuál es un FAME biológico?",o:["Inhibidor JAK","Inhibidor TNF-α","FAME de 1ª línea","Inhibidor IL-6"],a:0},
+{t:3,r:"42(2023)",q:"Tratamiento de inicio de artritis reumatoide:",o:["Metotrexato","Metotrexato + esteroides","Metotrexato + agente biológico","Agente biológico"],a:1},
+{t:3,r:"43(2023)",q:"Hombre de 63 años con gota aguda. ¿Qué fármaco sería menos eficaz?",o:["Naproxeno","Colchicina","Probenecid","Prednisona"],a:2},
+{t:3,r:"44(2023)",q:"La morfina de liberación prolongada da un alivio de hasta:",o:["24 horas","4 horas","12 horas","6 horas"],a:2},
+{t:3,r:"45(2023)",q:"Los opioides inducen:",o:["Analgesia, diarrea, náuseas, depresión respiratoria y miosis","Analgesia, estreñimiento, náuseas, tos y miosis","Analgesia, estreñimiento, náuseas, depresión respiratoria y miosis","Analgesia, diarrea, hipertensión y miosis"],a:2},
+{t:3,r:"46(2023)",q:"Señale la FALSA sobre los opiáceos:",o:["Tienen acción sobre el SNC","Tratan dolor moderado a leve","Son útiles para anestesia local","No tienen techo terapéutico"],a:2},
+{t:3,r:"58(2022)",q:"¿Cuál es la diferencia entre un antihistamínico de 1ª y 2ª generación?",o:["Selectividad H1","Capacidad de atravesar la BHE","Eficacia contra alergia","Potencia del bloqueo H1"],a:3},
+{t:3,r:"59(2022)",q:"No se pueden emplear antihistamínicos H1 en:",o:["Dermatitis por contacto","Asma aguda","Cinetosis","Conjuntivitis alérgica"],a:1},
+{t:3,r:"60(2022)",q:"¿Cuál es FALSA sobre la aspirina?",o:["Funciona como antiagregante en enfermedades coronarias","Es un antiinflamatorio","Es un AINE gastrolesivo","Su uso prolongado produce insuficiencia renal"],a:3},
+{t:3,r:"61(2022)",q:"Acción de los AINEs:",o:["Inhibe la síntesis del estímulo nociceptivo","Activa receptores M en el asta dorsal","Inhibe COX","Bloquea canal de Na"],a:2},
+{t:3,r:"62(2022)",q:"Paciente 64 años con dolor músculo-esquelético, diabetes, HTA, dislipemia, úlcera gástrica y coronariopatía. ¿Qué AINE?",o:["Coxib","Indometacina + omeprazol","Naproxeno + omeprazol","Naproxeno"],a:2},
+{t:3,r:"64(2022)",q:"Señale la INCORRECTA:",o:["AINE aumenta presión arterial","Ibuprofeno disminuye antiagregantes AAS","ISRS disminuye el riesgo de sangrado","AINE aumenta la toxicidad del litio"],a:2},
+{t:3,r:"65(2022)",q:"¿Cuál es un FAME?",o:["JAK","TNF alfa","1ª línea","IL-6"],a:0},
+{t:3,r:"66(2022)",q:"Tratamiento de inicio de artritis reumatoidea:",o:["Metotrexato","Metotrexato + esteroides","Metotrexato + agente biológico","Agente biológico"],a:1},
+{t:3,r:"67(2022)",q:"Paciente de 64 años con gota y dolor agudo. ¿Qué fármaco?",o:["Naproxeno","Colchicina","Prednisona","Ninguno"],a:1},
+{t:3,r:"68(2022)",q:"¿Cuánto tiempo permanece el efecto de la morfina de liberación rápida?",o:["24 h","4 h","12 h","6 h"],a:1},
+{t:3,r:"69(2022)",q:"¿Cuál NO es un efecto de la morfina?",o:["Disminución de la motilidad gastrointestinal","Disminución de la respiración","Analgesia","Hipertensión"],a:3},
+{t:3,r:"70(2022)",q:"Señala la FALSA sobre los fármacos opiáceos:",o:["Acción SNC","Dolor moderado intenso","Potente anestesia local","No tiene techo terapéutico"],a:2},
+{t:3,r:"51(2021)",q:"El mecanismo de acción de los AINEs es:",o:["Inhibición de la síntesis que participan en estímulos nociceptivos","Activación de receptores nu en astas dorsales","Inhibición de la ciclooxigenasa","Bloqueo del canal de Na+"],a:2},
+{t:3,r:"52(2021)",q:"Es FALSO que los analgésicos opiáceos:",o:["Tienen acción sobre el SNC","Se usan para dolor moderado a gran intensidad","Algunos son tan potentes que se usan para la anestesia local","No tienen techo terapéutico"],a:2},
+{t:3,r:"53(2021)",q:"La morfina de liberación rápida proporciona alivio del dolor de hasta:",o:["24 horas","4 horas","12 horas","6 horas"],a:1},
+{t:3,r:"54(2021)",q:"Los inhibidores de las JAK pueden ser una alternativa para el tratamiento de:",o:["Insuficiencia cardiaca","Hiperlipidemias","Artritis reumatoidea","Diabetes tipo 2"],a:2},
+{t:3,r:"55(2021)",q:"Los inhibidores de la xantina oxidasa los podemos utilizar en el tratamiento de:",o:["Artritis psoriásica","Artritis reumatoidea","Artritis gotosa","Asma bronquial"],a:2},
+{t:3,r:"56(2021)",q:"Los Coxib son:",o:["Antihistamínicos de segunda generación","Inhibidores de los cisleucotrienos","Inhibidores selectivos de la COX2","Fármacos del grupo de los FAME"],a:2},
+{t:3,r:"57(2021)",q:"Si un paciente tiene riesgo cardiovascular elevado, el AINE más adecuado sería:",o:["Diclofenaco","Celecoxib","Naproxeno","Metamizol"],a:2},
+{t:3,r:"58(2021)",q:"Debemos tener precaución con el uso conjunto de AINE más:",o:["IECA más diurético","Glucocorticoides","ISRS","Todas son correctas"],a:3},
+{t:3,r:"78(2021)",q:"Los efectos farmacológicos de la morfina incluyen todos los siguientes, EXCEPTO:",o:["Cambios en la conducta","Depresión respiratoria","Diarrea","Hipotensión ortostática"],a:2}
+];
+const Q3=[
+// PARTE IV
+{t:4,r:"51(2025)",q:"¿Cuál de los siguientes es un fármaco antidepresivo ISRS?",o:["Duloxetina","Fluoxetina","Reboxetina","Todas las respuestas anteriores son correctas"],a:1},
+{t:4,r:"52(2025)",q:"¿Qué diferencias tienen los nuevos antidepresivos inhibidores no selectivos con respecto a los tricíclicos?",o:["Producen menos visión borrosa, sequedad de boca y estreñimiento","Producen menos hipotensión ortostática","Producen menos sedación","Todas las opciones anteriores son correctas"],a:3},
+{t:4,r:"53(2025)",q:"¿Qué tipos de fármacos se utilizan en el tratamiento del Alzheimer?",o:["Estimulantes de la enzima acetilcolinesterasa a nivel cerebral","Agonistas NMDA","Inhibidores de la utilización de glucosa cerebral","Lecanemab"],a:0},
+{t:4,r:"54(2025)",q:"¿Cuál de los siguientes tipos de fármacos se utiliza en el tratamiento del Parkinson?",o:["Agonistas dopaminérgicos","Antagonistas colinérgicos","Antagonistas NMDA","Todas las respuestas anteriores son correctas"],a:3},
+{t:4,r:"90(2025)",q:"Tras la administración de un anestésico local, ¿qué tipo de sensibilidad se pierde ANTES?",o:["Dolor","Propiocepción","Tacto","Presión"],a:0},
+{t:4,r:"91(2025)",q:"¿Cuál es cierta sobre los anestésicos locales?",o:["Bloquean los canales de sodio voltaje-dependientes","El pH local no afecta a su actividad","No tienen efectos indeseables sistémicos","Los del grupo amida son más alergizantes que los ésteres"],a:0},
+{t:4,r:"92(2025)",q:"¿Cuál puede utilizarse por vía intravenosa como inductor de la anestesia general?",o:["Propofol","Etomidato","Midazolam","Todas las afirmaciones anteriores son correctas"],a:3},
+{t:4,r:"93(2025)",q:"¿Cuál de los siguientes anestésicos inhalatorios tiene mayor riesgo de producir isquemia coronaria?",o:["Enflurano","Isofluorano","Desflurano","Óxido Nitroso"],a:1},
+{t:4,r:"94(2025)",q:"¿Cuál de los siguientes anestésicos generales NO produce hipotensión ni depresión respiratoria a dosis terapéuticas?",o:["Propofol","Óxido Nitroso","Tiopental","Isoflurano"],a:1},
+{t:4,r:"95(2025)",q:"¿Cuáles son contraindicaciones absolutas de las benzodiacepinas?",o:["Insuficiencia respiratoria","Síndrome de apnea obstructiva del sueño","Miastenia Gravis","Todas las respuestas anteriores son correctas"],a:3},
+{t:4,r:"96(2025)",q:"¿Qué tipo de hipnóticos mantienen mejor la arquitectura normal del sueño y son más seguros en la mujer embarazada?",o:["Zolpidem","Benzodiacepinas","Barbitúricos","No hay diferencias"],a:0},
+{t:4,r:"97(2025)",q:"Los fármacos antipsicóticos de primera generación:",o:["Bloquean receptores dopaminérgicos D2 en la vía mesolímbica","Activan receptores dopaminérgicos D1 en la vía mesolímbica","Activan receptores dopaminérgicos D2 en la vía nigroestriada","Activan receptores dopaminérgicos D2 en la vía tubero-infundibular"],a:0},
+{t:4,r:"98(2025)",q:"Los fármacos antipsicóticos de segunda generación con respecto a los de primera:",o:["Mejoran los síntomas negativos de la esquizofrenia","Empeoran los déficits cognitivos","Tienen más efectos extrapiramidales","Producen galactorrea con más frecuencia"],a:0},
+{t:4,r:"99(2025)",q:"¿Cuál de los siguientes es un mecanismo de acción de los fármacos anticonvulsivantes?",o:["Inhibición de la neurotransmisión mediada por GABAA","Aumento en la liberación de glutamato","Bloqueo de canales de Na+ voltaje-dependientes","Apertura de Canales de Ca2+ tipo L"],a:2},
+{t:4,r:"100(2025)",q:"¿Cuál de los siguientes son fármacos anticonvulsivantes?",o:["Carbamazepina","Fenitoína","Valproato","Todas las respuestas anteriores son correctas"],a:3},
+{t:4,r:"24(2023)",q:"¿En qué se diferencian fundamentalmente los antipsicóticos de 2ª generación respecto a los de 1ª?",o:["Producen más enlentecimiento motor","Tienen más efectos extrapiramidales","Mejoran los síntomas negativos de la enfermedad","Producen con más frecuencia galactorrea"],a:2},
+{t:4,r:"36(2023)",q:"Cierto sobre Buspirona (ansiolítico):",o:["Efecto inmediato","Efecto tarda en aparecer más de dos semanas","Produce dependencia","Contraindicado en ancianos"],a:1},
+{t:4,r:"37(2023)",q:"Fármacos antipsicóticos de segunda generación:",o:["Menos eficaces ante síntomas negativos","Más eficaces ante síntomas negativos de esquizofrenia","Producen más efectos extrapiramidales","Contraindicados en diabetes"],a:1},
+{t:4,r:"38(2023)",q:"¿Qué tipo de fármacos para el tratamiento del Parkinson por neurolépticos?",o:["Agonistas dopaminérgicos","Antagonistas colinérgicos","Inhibidores de la MAO","Antagonistas NMDA"],a:1},
+{t:4,r:"16(2022)",q:"Los anestésicos locales:",o:["Bloquean canales de Na voltaje-dependientes","No dependen de la liposolubilidad","No dependen de la ionización","Ninguna de las anteriores"],a:0},
+{t:4,r:"17(2022)",q:"Secuencia de afectación de anestésicos locales:",o:["Primero se pierde el dolor y por último la propiocepción","Primero se pierde la percepción de tacto/presión","Primero se pierde la contracción","Ninguna de las anteriores"],a:0},
+{t:4,r:"18(2022)",q:"¿Anestésico inhalatorio que produce más frecuentemente isquemia coronaria?",o:["Isofluorano","Desfluorano","Óxido nitroso","Enfluorano"],a:0},
+{t:4,r:"19(2022)",q:"Anestesia general que no deprime la respiración:",o:["Propofol","Tiopental","Óxido nitroso","Ninguno"],a:2},
+{t:4,r:"20(2022)",q:"Las benzodiacepinas:",o:["Anticonvulsivas","Disminuyen el tono","El alprazolam es antidepresivo","Todas son correctas"],a:3},
+{t:4,r:"21(2022)",q:"¿Cuál es verdadera sobre los ansiolíticos?",o:["El etifoxine potencia las benzodiacepinas sin competir por los sitios de unión","La buspirona tarda días o semanas en manifestar sus efectos","Los antidepresivos que inhiben la recaptación de serotonina son ansiolíticos","Todas son correctas"],a:3},
+{t:4,r:"22(2022)",q:"Efectos secundarios de los antipsicóticos clásicos:",o:["Empeoran la esquizofrenia","Síntomas extrapiramidales","Galactorrea","Todas son correctas"],a:3},
+{t:4,r:"23(2022)",q:"Sobre los antipsicóticos de segunda generación:",o:["Son más eficaces para síntomas negativos y modulan serotonina mejor que los de 1ª generación","Presentan más efectos extrapiramidales que los de 1ª generación","No tienen efectos activos del antagonismo","Todo falso"],a:0},
+{t:4,r:"24(2022)",q:"Sobre el mecanismo de los anticonvulsivantes:",o:["Bloquean canales de sodio voltaje-dependientes","Bloquean canales de calcio","Bloquean canales NMDA de glutamato","Todas son correctas"],a:3},
+{t:4,r:"25(2022)",q:"Anticonvulsivante que se une entre las subunidades alfa y gamma del receptor GABA A:",o:["Benzodiacepinas","Leviracetam","Lamotrigina","Retigabina"],a:0},
+{t:4,r:"26(2022)",q:"La fluoxetina es un antidepresivo que actúa como:",o:["Inhibidor no selectivo de la recaptación de serotonina y noradrenalina","Inhibidor selectivo de la recaptación de serotonina","Inhibidor selectivo de la recaptación de noradrenalina","Inhibidor de la MAO-A"],a:1},
+{t:4,r:"27(2022)",q:"Fármacos para tratamiento de manía:",o:["Sales de litio","Anticonvulsivo","Antipsicóticos atípicos","Todas son correctas"],a:3},
+{t:4,r:"28(2022)",q:"Tratamiento Alzheimer:",o:["Inhibidores de la acetilcolinesterasa central","Agonistas de NMDA","Agonistas D2","Ninguno de los anteriores"],a:0},
+{t:4,r:"29(2022)",q:"Efectos de la Levodopa:",o:["Discinesias","Fluctuaciones motoras","Wearing off/deterioro de fin de dosis","Todos los anteriores son correctos"],a:3},
+{t:4,r:"1(2021)",q:"¿Cuál de los anestésicos inhalatorios puede inducir con más facilidad broncoespasmo?",o:["Enflurano","Isoflurano","Desflurano","Sevoflurano"],a:2},
+{t:4,r:"2(2021)",q:"¿Cuál es el mecanismo de acción principal de las benzodiacepinas?",o:["Se unen a la interfase de la subunidad y μ del receptor GABA C","Agonista parcial de los receptores 5HT1a","Inhibición de receptores NMDA","Se unen a la interfase de las subunidades alfa y beta del receptor GABA A"],a:3},
+{t:4,r:"3(2021)",q:"¿Por cuál anestésico general inhalatorio puede producirse isquemia coronaria en pacientes susceptibles?",o:["Isoflurano","Desflurano","Enflurano","Sevoflurano"],a:0},
+{t:4,r:"6(2021)",q:"¿Qué tipo de fármacos se pueden utilizar en el tratamiento del Alzheimer?",o:["Inhibidor de la enzima colinesterasa central","Agonistas NMDA","Agonistas D2","Ninguno de los anteriores"],a:0},
+{t:4,r:"16(2021)",q:"¿Cuál es el mecanismo de acción principal de las benzodiacepinas?",o:["Se unen a la interfase de las subunidades α y γ del receptor GABAa","Activan receptores de 5HT1A","Se unen a la interfase de la subunidad γ del receptor GABAC","Bloquean receptores de 5HT2B"],a:0},
+{t:4,r:"18(2021)",q:"¿Cuál de los siguientes efectos secundarios pueden aparecer tras antipsicóticos típicos?",o:["Efectos extrapiramidales","Galactorrea","Sedación","Todas las opciones anteriores son correctas"],a:3},
+{t:4,r:"19(2021)",q:"¿Qué tipos de fármacos antipsicóticos actúan como antagonistas de D2 en área mesolímbica y bloqueando receptores 5-HT2A?",o:["Antipsicóticos típicos o de primera generación","Antipsicóticos atípicos de segunda generación","Antipsicóticos atípicos de tercera generación","Todas las opciones anteriores son correctas"],a:1},
+{t:4,r:"20(2021)",q:"¿Cuál puede utilizarse como fármaco anticonvulsivante?",o:["Carbamacepina","Valproato","Diazepam","Todas las opciones anteriores son correctas"],a:3},
+{t:4,r:"21(2021)",q:"Fármacos que se pueden utilizar en el tto del Alzheimer:",o:["Inhibidores reversibles de la acetilcolinesterasa","Bloqueantes no competitivos de los receptores NMDA","Ambas son correctas","Ninguna es correcta"],a:2},
+{t:4,r:"22(2021)",q:"Fármacos que se suelen utilizar en el tto del Parkinson:",o:["Trihexifenidilo","Bromocriptina","Levodopa","Todas son correctas"],a:3},
+{t:4,r:"72(2021)",q:"La secuencia del bloqueo por los anestésicos locales es:",o:["Lo primero que se pierde es la propiocepción","Primero se pierde la sensación de tacto; lo último es el alivio del dolor","Lo último que se pierde es la motricidad","Todas son falsas"],a:2}
+];
+const Q4=[
+// PARTE V
+{t:5,r:"6(2025)",q:"Los fármacos ARNI se pueden usar conjuntamente con:",o:["Diuréticos","IECAS","Aliskireno","ARAII"],a:0},
+{t:5,r:"7(2025)",q:"Señala la respuesta incorrecta con respecto a la ivabradina:",o:["Se utiliza para tratamiento de la Insuficiencia Cardiaca","Se utiliza para tratamiento de la Cardiopatía Isquémica","Se puede utilizar si el paciente está en fibrilación auricular","Se puede usar si el paciente tiene una FC>70lpm"],a:2},
+{t:5,r:"8(2025)",q:"¿Cuál de las siguientes afirmaciones sobre los nitratos es FALSA?",o:["No se debe asociar con sildenafilo","Activan la guanilatociclasa y producen aumento de GMPc","Se utilizan en angina de reposo y de esfuerzo","Reducen la frecuencia cardiaca"],a:3},
+{t:5,r:"9(2025)",q:"El Inclisiran se utiliza para tratamiento de:",o:["Insuficiencia cardiaca","Hipertensión arterial","Cardiopatía Isquémica","Hiperlipidemias"],a:3},
+{t:5,r:"10(2025)",q:"Después de una revascularización coronaria con angioplastia, como antiagregantes debemos utilizar:",o:["AAS más Ticagrelor durante doce meses","AAS más Abciximab durante doce meses","AAS más Clopidogrel durante un mes","AAS durante doce meses"],a:0},
+{t:5,r:"13(2025)",q:"¿Cuál de las siguientes indicaciones NO es propia de las tiazidas?",o:["Hipertensión arterial","Insuficiencia renal crónica","Nefrolitiasis debida a hipercalciuria","Diabetes insípida nefrogénica"],a:1},
+{t:5,r:"14(2025)",q:"¿Cuál disminuye la síntesis de colesterol por inhibición de la HMG coenzima A reductasa?",o:["Fenofibrato","Ezetimibe","Simvastatina","Gemfibrozilo"],a:2},
+{t:5,r:"18(2025)",q:"Paciente asmático, hipertenso y con colesterol elevado con episodios de angor. ¿Qué fármaco excluiría?",o:["Verapamilo","Propranolol","Aspirina","Nitratos"],a:1},
+{t:5,r:"24(2025)",q:"Paciente portador de Cardiopatía Isquémica. Al alta hospitalaria tiene como posible tratamiento:",o:["IECA","Estatinas","Diuréticos osmóticos","a y b son correctas"],a:3},
+{t:5,r:"25(2025)",q:"Son acciones de los IECAs, EXCEPTO:",o:["Disminuyen la presión arterial","Dilatan las arteriolas al impedir la formación de angiotensina II","Bloquean la acción de la enzima convertidora de angiotensina","Producen hipopotasemia"],a:3},
+{t:5,r:"33(2025)",q:"Si deseo bajar la presión arterial antagonizando receptores de angiotensina II, elegiré:",o:["Labetalol","Telmisartan","Captopril","Furosemida"],a:1},
+{t:5,r:"34(2025)",q:"La metildopa es un antihipertensivo:",o:["Antagonista del Calcio","Bloqueante alfa-adrenérgico","De acción periférica","De acción central"],a:3},
+{t:5,r:"35(2025)",q:"Paciente con digoxina y arritmia. ¿Cuál contribuye más al efecto arritmógeno?",o:["Aumento de la descarga parasimpática","Aumento del Calcio intracelular","Disminución de la descarga simpática","Aumento del Potasio extracelular"],a:1},
+{t:5,r:"36(2025)",q:"¿Qué fármaco ha mostrado reducir la mortalidad en la insuficiencia cardiaca crónica?",o:["Digoxina","Empagliflozina","Furosemida","Nitroprusiato"],a:1},
+{t:5,r:"37(2025)",q:"Se administra amiodarona por taquicardia ventricular pues:",o:["Aumenta la duración del potencial de acción","Disminuye el intervalo PR en ritmo sinusal normal","Incrementa la contractilidad","A menudo causa anomalías en la función renal"],a:0},
+{t:5,r:"38(2025)",q:"¿Cuál es la descripción más precisa del mecanismo de acción del ezetimibe?",o:["Disminución de la síntesis de lípidos en tejido adiposo","Disminución de la secreción de VLDL por el hígado","Disminución de la absorción gastrointestinal de colesterol","Aumento de la hidrólisis de lípidos por lipoproteína lipasa"],a:2},
+{t:5,r:"13(2023)",q:"Mecanismo y arritmia por digoxina:",o:["Aumento del Calcio intracelular","Disminuye la contracción","Aumento de la frecuencia sinusal","Disminuye el tono vagal"],a:0},
+{t:5,r:"45(2023)",q:"¿Cuál es la asociación fármaco-efecto INCORRECTA?",o:["Propranolol-taquicardia","Verapamilo-bradicardia","Furosemida-hipopotasemia","IECA-hiperpotasemia"],a:0},
+{t:5,r:"1(2023)",q:"IECA provoca:",o:["Inhibe la recaptación de AT1","Hipotensión","Hipopotasemia","Disminución de bradiquininas"],a:1},
+{t:5,r:"2(2023)",q:"Tratamiento de ICFEr:",o:["ISGLT2","IPCSK9","ICOMT","ISRS"],a:0},
+{t:5,r:"3(2023)",q:"ARNI se puede combinar con:",o:["Diurético","IECAS","Aliskireno","ARA-2"],a:0},
+{t:5,r:"4(2023)",q:"Incorrección de la ivabradina:",o:["Cardiaca","Cardiopatía isquémica","Si hay fibrilación auricular","Si FC>70LPM"],a:2},
+{t:5,r:"5(2023)",q:"Digoxina:",o:["Aumento Ca 2+ intracelular","Disminuye la contracción","Aumento de la frecuencia sinusal","Disminuye el tono vagal"],a:0},
+{t:5,r:"6(2023)",q:"Angina, ataque agudo:",o:["Dinitrato isosorbida","Nitroglicerina parche","Nitroglicerina sublingual","Ranolazina"],a:2},
+{t:5,r:"7(2023)",q:"Señale la FALSA sobre nitratos:",o:["No asociado a viagra","Aumento de GMPc","Angina en reposo y en esfuerzo","Disminución de la frecuencia cardiaca"],a:3},
+{t:5,r:"8(2023)",q:"Señale la FALSA sobre amiodarona:",o:["Abre canales de Na+","Antiadrenérgico","Inhibe K+","Prolonga el potencial de acción"],a:0},
+{t:5,r:"9(2023)",q:"Señale la FALSA:",o:["Estatinas inhiben HMG-CoA","Fibratos en hipertriglicéridos","Colestipol y colestiramina son resinas de intercambio iónico","Ezetimiba aumenta la actividad de la lipoproteína lipasa"],a:3},
+{t:5,r:"10(2023)",q:"En casos de aumento de LDL, ¿cuál es el tratamiento cuya reacción adversa es dolor muscular?",o:["Atorvastatina","Gemfibrozilo","Ezetimiba","a y b son correctas"],a:3},
+{t:5,r:"11(2023)",q:"Inclisiran es tratamiento de:",o:["Cardiaca","Hipertensión arterial","Cardiopatía isquémica","Hiperlipidemia"],a:3},
+{t:5,r:"47(2023)",q:"¿Qué diuréticos se usan en casos de insuficiencia cardiaca con edema pulmonar?",o:["Diuréticos del asa","Tiazidas","Ahorradores de K+","Osmóticos"],a:0},
+{t:5,r:"48(2023)",q:"¿Qué característica tienen los diuréticos del asa que NO tienen las tiazidas?",o:["Hipopotasemia","Hiperuricemia","Hiperglucemia","Hipercalcemia"],a:3},
+{t:5,r:"71(2022)",q:"¿Qué fármaco evitaremos por dificultar más la respiración en cardiopatía con edema de pulmón?",o:["Clortalidona","Furosemida","Manitol","Espironolactona"],a:2},
+{t:5,r:"72(2022)",q:"Los IECAs disminuyen la degradación de:",o:["Angiotensina I","Aldosterona","Bradicina","Renina"],a:2},
+{t:5,r:"73(2022)",q:"Incorrecto respecto a fármaco hipertensivo-efecto indeseado:",o:["Hidroclorotiazida - hipopotasemia","Enalapril - hiperpotasemia","Nifedipino - edema","Verapamilo - taquicardia"],a:3},
+{t:5,r:"75(2022)",q:"En el tratamiento de la HTA son posibles estas combinaciones EXCEPTO:",o:["Tiazidas - Antagonistas del calcio","IECAS - Antagonistas del Calcio","IECAS - ARAII","IECAS - Tiazidas"],a:2},
+{t:5,r:"77(2022)",q:"Los medicamentos denominados ARNi se utilizan en el tratamiento de:",o:["Hipertensión arterial","Diabetes","Insuficiencia cardíaca","Cardiopatía isquémica"],a:2},
+{t:5,r:"78(2022)",q:"Señala la respuesta incorrecta con respecto a la ivabradina:",o:["Se utiliza para tratamiento de la insuficiencia cardíaca","Se utiliza para el tratamiento de la cardiopatía isquémica","Se puede utilizar si el paciente está en fibrilación auricular","Se puede usar si el paciente tiene una Fc > 70lpm"],a:2},
+{t:5,r:"81(2022)",q:"Mecanismo de acción de los nitratos en la Cardiopatía Isquémica:",o:["Disminuyen espasmo coronario y tienen acción vasoconstrictora","Disminuyen espasmo coronario y tienen acción vasodilatadora por liberación de Óxido Nítrico","Aumentan el espasmo coronario","Ninguna de las anteriores"],a:1},
+{t:5,r:"82(2022)",q:"La amiodarona: ¿cuál opción engloba las cuatro afirmaciones?",o:["Solo a y b son correctas","Solo c y d son correctas","Las cuatro afirmaciones anteriores son correctas","Ninguna es correcta"],a:2},
+{t:5,r:"83(2022)",q:"Las estatinas inhiben:",o:["La absorción de colesterol intestinal","La HMG CoA reductasa","La lipoproteína lipasa","La síntesis de ácidos biliares"],a:1},
+{t:5,r:"85(2022)",q:"Los fármacos IPCSK9 se utilizan para tratamiento de:",o:["Insuficiencia cardiaca","Hipertensión arterial","Cardiopatía isquémica","Hiperlipidemias"],a:3},
+{t:5,r:"40(2021)",q:"En el tratamiento de la HTA de una mujer embarazada en la primera etapa se utiliza de elección:",o:["Enalapril","Amlodipina","Carvedilol","Metildopa"],a:3},
+{t:5,r:"41(2021)",q:"Los fármacos IPCSK9 se utilizan para tratamiento de:",o:["Insuficiencia cardiaca","Hipertensión arterial","Cardiopatía isquémica","Hiperlipidemias"],a:3},
+{t:5,r:"42(2021)",q:"En el caso de HTA resistente podemos utilizar como tratamiento:",o:["Espironolactona","Calcioantagonistas","IECAS o ARAII","Todas son correctas"],a:0},
+{t:5,r:"43(2021)",q:"En el tratamiento de la HTA son posibles estas combinaciones EXCEPTO:",o:["IECAS - Antagonistas del calcio","IECAS - Tiazidas","IECAS - ARAII","Tiazidas - Antagonistas del Calcio"],a:2},
+{t:5,r:"44(2021)",q:"Uno de los siguientes fármacos está contraindicado como tratamiento de la HTA durante el embarazo:",o:["Captopril","Labetalol","Amlodipina","Metildopa"],a:0},
+{t:5,r:"45(2021)",q:"Los medicamentos denominados ARNi se utilizan en el tratamiento de:",o:["Hipertensión arterial","Diabetes","Insuficiencia cardiaca","Cardiopatía isquémica"],a:2},
+{t:5,r:"47(2021)",q:"¿Cuál de las siguientes indicaciones NO es propia de las tiazidas?",o:["Hipertensión arterial","Insuficiencia renal","Nefrolitiasis debida a hipercalciuria","Diabetes insípida nefrogénica"],a:1},
+{t:5,r:"48(2021)",q:"¿Qué fármaco inhibe la absorción de colesterol?",o:["Ezetimiba","Fluvastatina","Simvastatina","Atorvastatina"],a:0},
+{t:5,r:"61(2021)",q:"Fármaco cuya reacción adversa incluye hipotiroidismo:",o:["Amiodarona","Propranolol","Verapamilo","Digoxina"],a:0},
+{t:5,r:"79(2021)",q:"Todos los pacientes con insuficiencia cardiaca crónica deben recibir:",o:["Betabloqueantes + digitálicos","IECA + betabloqueantes","Diurético + Antagonista de la Aldosterona","Aspirina + Betabloqueantes"],a:1},
+{t:5,r:"80(2021)",q:"Paciente asmático, hipertenso e hipercolesterolémico con episodios de angor. ¿Qué fármaco excluiría?",o:["Verapamilo","Propranolol","Aspirina","Nitratos"],a:1},
+{t:5,r:"81(2021)",q:"Señala la respuesta incorrecta con respecto a la ivabradina:",o:["Se utiliza para tratamiento de la insuficiencia cardíaca","Se utiliza para tratamiento de la cardiopatía isquémica","Se puede utilizar si el paciente está en fibrilación auricular","Se puede usar si el paciente tiene una Fc>70lpm"],a:2},
+{t:5,r:"82(2021)",q:"¿Cuál de las siguientes asociaciones fármaco-efecto indeseado es INCORRECTA?",o:["Hidroclorotiazida - hipopotasemia","Enalapril - Hiperpotasemia","Nifedipino - Edemas maleolares","Verapamilo - taquicardia"],a:3},
+{t:5,r:"83(2021)",q:"Paciente portador de Cardiopatía isquémica. Al alta hospitalaria tiene como posible tratamiento:",o:["IECA","Estatinas","Diuréticos osmóticos","A y b son correctas"],a:3}
+];
+const Q5=[
+// PARTE VI
+{t:6,r:"15(2025)",q:"Mujer de 70 años con fibrilación auricular no valvular e insuficiencia renal moderada. ¿Cuál NO requiere reducción de dosis?",o:["Apixaban","Dabigatrán","Rivaroxabán","Acenocumarol"],a:3},
+{t:6,r:"19(2025)",q:"¿Cuál es la contraindicación absoluta para los fármacos fibrinolíticos?",o:["Endocarditis infecciosa","Punciones no compresibles","Resucitación refractaria","Enfermedad hepática avanzada"],a:1},
+{t:6,r:"20(2025)",q:"En el tratamiento con factores estimulantes de crecimiento de células hemáticas es importantísimo administrarlos:",o:["Antes de la diálisis","Con suplementos de hierro","Con vitamina B12","Con ácido fólico"],a:1},
+{t:6,r:"41(2025)",q:"Si se usa un fibrinolítico para el tratamiento del infarto agudo de miocardio, ¿cuál es apropiado?",o:["Ácido tranexámico","Heparina","Alteplasa","Acenocumarol"],a:2},
+{t:6,r:"42(2025)",q:"Para tratamiento de hemorragia en paciente con acenocumarol se debe suspender el fármaco y tratarse con:",o:["Desmopresina","Factor VIII","Protamina","Vitamina K"],a:3},
+{t:6,r:"1(2023)",q:"Ante una hemorragia provocada por el uso de heparina utilizaremos:",o:["Desmopresina","Vitamina K","Protamina","Ácido épsilon amino caproico"],a:2},
+{t:6,r:"20(2023)",q:"Dabigatrán es un anticoagulante oral directo inhibidor directo de la trombina. ¿Verdadero o falso?",o:["Verdadero","Falso"],a:0},
+{t:6,r:"22(2023)",q:"Después de una revascularización coronaria con angioplastia, como antiagregante:",o:["AAS más Ticagrelor durante doce meses","AAS más Abciximab durante doce meses","AAS más Clopidogrel durante un mes","AAS más Ticlopidina durante doce meses"],a:0},
+{t:6,r:"28(2023)",q:"Vitamina K es el antídoto para sobredosis de:",o:["Heparina","Warfarina","Acenocumarol","Dabigatrán"],a:2},
+{t:6,r:"12(2023)",q:"Déficit de vitamina B12 (por mala absorción) produce:",o:["Anemia megaloblástica y alteración neurológica","Administración sólo de ácido fólico","Vitamina por vía oral","Administración diaria de vitaminas durante meses"],a:0},
+{t:6,r:"13(2023)",q:"Tras revascularización, ¿qué antiagregante se usa?",o:["AAS+ticagrelor (durante 12 meses)","AAS + abciximab (durante 12 meses)","AAS + droperidol (durante 12 meses)","AAS (durante 12 meses)"],a:0},
+{t:6,r:"14(2023)",q:"Mecanismo de acción de rt-PA:",o:["Inhibe la acción plaquetaria","Aumenta antitrombosis","Inhibe GPIIa/IIb","Aumenta plasminógeno unido a fibrina"],a:3},
+{t:6,r:"15(2023)",q:"Tratamiento hemorrágico:",o:["Vitamina B","Ácido aminocaproico","Sulfato protamina","Vitamina K"],a:3},
+{t:6,r:"16(2023)",q:"Acenocumarol:",o:["Inhibe glucoproteínas G2Y12","Inhibe formación factores activadores de la coagulación","Inhibe la síntesis endógena de Vit K","Acelera la degradación de factores activadores de la coagulación"],a:1},
+{t:6,r:"17(2023)",q:"Fibrilación auricular + nefropatía, hace falta disminuir la dosis de todos EXCEPTO:",o:["Apixabán","Dabigatrán","Rivaroxabán","Acenocumarol"],a:3},
+{t:6,r:"87(2022)",q:"Después de la revascularización coronaria con angioplastia, como antiagregantes:",o:["AAS + Ticagrelor durante 12 meses","AAS + Abciximab durante 12 meses","AAS más Clopidogrel durante 1 mes","AAS más Ticlopidina durante 12 meses"],a:0},
+{t:6,r:"88(2022)",q:"El mecanismo de rt-PA es:",o:["Inhibición plaquetaria","Antitrombosis","Inhibición GPIIa/IIb","Activar el plasminógeno unido a la fibrina"],a:3},
+{t:6,r:"90(2022)",q:"Mecanismo del acenocumarol:",o:["Acelera la degradación de los factores activos de la coagulación","Inhibe la formación de los factores activos de la coagulación","Inhibe la síntesis endógena de la Vit K","Inhibe la glucoproteina G2Y12"],a:2},
+{t:6,r:"91(2022)",q:"Mujer 71 años con fibrilación auricular no valvular y nefropatía. ¿Cuál NO requiere reducción de dosis?",o:["Apixaban","Dabigatrán","Rivaroxabán","Acenocumarol"],a:3},
+// PARTE VII
+{t:7,r:"44(2025)",q:"¿Cuál puede utilizarse para obtener un efecto broncodilatador directo inmediato en asma aguda grave?",o:["Salbutamol","Ipratropio","Montelukast","Prednisona"],a:0},
+{t:7,r:"18(2023)",q:"Señale la FALSA sobre el asma:",o:["Agonistas β2 provocan relajación sobre el músculo bronquial","Teofilina en altas concentraciones inhibe la fosfodiesterasa","Glucocorticoides sistémicos tienen menos efectos adversos","Antagonistas de leucotrienos se utilizan para la profilaxis del asma sensible al AAS"],a:2},
+{t:7,r:"92(2022)",q:"Crisis asma aguda. Medicamento:",o:["Metilxantinas","Antagonistas de receptores de los cisleucotrienos","Corticosteroides inhalados","Agonistas adrenérgicos beta dos inhalados"],a:3},
+{t:7,r:"85(2021)",q:"En el tratamiento de la crisis asmática aguda utilizaremos:",o:["Corticosteroides inhalados","Antagonistas de receptores de los cisleucotrienos","Metilxantinas","Agonistas adrenérgicos beta dos inhalados"],a:3},
+// PARTE VIII
+{t:8,r:"55(2025)",q:"¿Cuál de los siguientes actúa como antagonista histaminérgico H2?",o:["Omeprazol","Ranitidina","Bismuto","Misoprostol"],a:1},
+{t:8,r:"56(2025)",q:"Los inhibidores de ácido competitivos con K+ (PCAbs) como el vonoprazan se diferencian de los IBP en que:",o:["No necesitan ser activados por ácido","Inhibición más lenta de la secreción ácida gástrica","Alcanzan más lentamente su efecto","No tienen efecto tan completo con la primera dosis oral"],a:0},
+{t:8,r:"57(2025)",q:"¿Cuál de los siguientes antieméticos actúa como antagonista H1 y M1?",o:["Prometazina","Hioscina","Dimenhidrinato","Metoclopramida"],a:2},
+{t:8,r:"58(2025)",q:"¿Cuál de los siguientes antieméticos actúa como antagonista D2?",o:["Prometazina","Hioscina","Metoclopramida","Aprepitant"],a:2},
+{t:8,r:"59(2025)",q:"¿Cuál de los siguientes grupos son estimulantes de la motilidad intestinal para el estreñimiento?",o:["Agonistas 5-HT4","Antagonistas dopaminérgicos D2","Activadores del canal 2 de cloruro ClC2","Todas las opciones anteriores son correctas"],a:3},
+{t:8,r:"60(2025)",q:"¿Cuál de los siguientes grupos son inhibidores de la motilidad intestinal?",o:["Opiáceos como la loperamida","Antagonistas de la encefalinasa intestinal como el racecadotrilo","Antagonistas colinérgicos muscarínicos","Todas las opciones anteriores son correctas"],a:3},
+{t:8,r:"2(2023)",q:"¿Cuál de los siguientes fármacos es un protector de la mucosa gástrica análogo de la PGE2?",o:["Misoprostol (PGE1)","Sucralfato","Bismuto coloidal","Ninguna de las opciones anteriores es correcta"],a:0},
+{t:8,r:"3(2023)",q:"Fármaco que inhibe la secreción gástrica y actúa como antihistamínico tipo H2:",o:["Ranitidina","Omeprazol","Misoprostol","Bismuto"],a:0},
+{t:8,r:"26(2023)",q:"Agonistas de receptores 5HT4:",o:["Disminuyen la motilidad intestinal","Aumentan la motilidad en el estreñimiento","No tienen efecto sobre la motilidad","Son antidiarreicos"],a:1},
+{t:8,r:"39(2023)",q:"Agonistas 5HT4 son:",o:["Inhibidores de la motilidad intestinal","Estimulantes de la motilidad intestinal en el estreñimiento","Antieméticos","Antisecretores gástricos"],a:1},
+{t:8,r:"30(2022)",q:"Inhibidor de la secreción de ácido gástrico que es antagonista de H2:",o:["Ranitidina","Sucralfato","Misoprostol","Omeprazol"],a:0},
+{t:8,r:"31(2022)",q:"Inhibidor de secreción de ácido clorhídrico, antagonista de receptores CCK2R:",o:["Proglumida","Ranitidina","Sucralfato","Misoprostol"],a:0},
+{t:8,r:"32(2022)",q:"Los antieméticos metoclopramida y domperidona son antagonistas de:",o:["H1","D2","5-HT3","NK1"],a:1},
+{t:8,r:"33(2022)",q:"Son antidiarreicos:",o:["Antagonista de D2","Antagonista opiáceo","Inhibidores de la encefalinasa intestinal","Todas las opciones son correctas"],a:2},
+{t:8,r:"7(2021)",q:"¿Cuál actúa como inhibidor de la bomba de protones (IBP)?",o:["Omeprazol","Ranitidina","Misoprostol","Ninguno"],a:0},
+{t:8,r:"9(2021)",q:"¿Cuál puede ser útil en el tratamiento de la diarrea?",o:["Inhibidor de la encefalinasa intestinal","Agonista 5-HT4","Antagonista D2","Ninguno"],a:0},
+{t:8,r:"23(2021)",q:"Fármaco que inhibe la secreción gástrica y actúa como antihistamínico tipo H2:",o:["Ranitidina","Omeprazol","Misoprostol","Bismuto"],a:0}
+];
+const Q6=[
+// PARTE IX
+{t:9,r:"11(2025)",q:"Indique la afirmación INCORRECTA sobre los glucocorticoides:",o:["Su secreción está controlada por la ACTH","Sus receptores son intracelulares","Promueven la síntesis de interleucina 2","Provocan la síntesis de Lipocortina"],a:2},
+{t:9,r:"16(2025)",q:"Los glucocorticoides:",o:["Actúan sobre receptores intracelulares que traslocan al núcleo","Regulan la transcripción de genes específicos","Reducen la expresión de COX inducible y NOS inducible","Todas son ciertas"],a:3},
+{t:9,r:"21(2025)",q:"Un paciente diabético toma pioglitazona. ¿Qué efecto adverso puede producir?",o:["Aumento del riesgo de insuficiencia cardiaca","Disminución de peso","Flatulencia y meteorismo","Náuseas y vómitos"],a:0},
+{t:9,r:"27(2025)",q:"¿Cuál de los siguientes es un efecto frecuente de la metformina?",o:["Retención hidrosalina","Aumento de peso","Alteraciones gastrointestinales","Empeoramiento del perfil lipídico"],a:2},
+{t:9,r:"28(2025)",q:"¿Cuál sería el tratamiento más adecuado para diabetes mellitus tipo 2 en mujer embarazada?",o:["Semaglutida","Insulina","Metformina","Pioglitazona"],a:1},
+{t:9,r:"43(2025)",q:"¿Cuál de los siguientes es un efecto farmacológico de los glucocorticoides administrados de forma exógena?",o:["Aumento de la masa muscular","Hiperglucemia","Mejor cicatrización de las heridas","Mayor excreción de sal y agua"],a:1},
+{t:9,r:"61(2025)",q:"¿Cuál es FALSA sobre las tionamidas?",o:["Inhiben la enzima tiroperoxidasa","Se emplean en el tratamiento del hipertiroidismo","El propiltiouracilo puede producir insuficiencia hepática grave","El carbimazol atraviesa menos la barrera placentaria y se aconseja en mujeres embarazadas"],a:3},
+{t:9,r:"62(2025)",q:"¿Cuál información sobre los yoduros es cierta?",o:["Pueden producir inflamación de las glándulas salivales y conjuntivitis","Indicados para prevenir la tormenta tiroidea","Indicados antes de la administración de 131I","Todas las respuestas anteriores son correctas"],a:3},
+{t:9,r:"63(2025)",q:"¿Cuál de los siguientes actúa preferentemente AUMENTANDO LA FORMACIÓN DE HUESO en la osteoporosis?",o:["Bifosfonatos","Denosumab","Raloxifeno","Teriparatida"],a:3},
+{t:9,r:"64(2025)",q:"¿Cuál fármaco en osteoporosis tiene acción mixta antireabsortiva y osteoformadora al actuar sobre la esclerotina?",o:["Denosumab","Romosozumab","Alendronato","Teriparatida"],a:1},
+{t:9,r:"65(2025)",q:"¿Cuál de los siguientes es un efecto secundario de los estrógenos?",o:["Cáncer de mama y de ovario","Cardiopatía isquémica","Tromboembolismo","Todas las opciones anteriores son correctas"],a:3},
+{t:9,r:"66(2025)",q:"El tamoxifeno:",o:["Tiene efecto antagonista estrogénico en hueso","Tiene efecto antagonista estrogénico en endometrio","Tiene efecto antagonista estrogénico en el perfil lipídico","Tiene efecto antagonista estrogénico en la mama"],a:3},
+{t:9,r:"67(2025)",q:"¿Cuál de los siguientes fármacos es relajante uterino?",o:["Atosiban","Terbutalina","Magnesio","Todas las respuestas son correctas"],a:3},
+{t:9,r:"68(2025)",q:"¿En qué se caracteriza el método anticonceptivo femenino tetrafásico conocido como Natazia?",o:["Progestágeno todo el ciclo y Estradiol valerato cuadrifásico","Progestágeno cuatro veces a partir del día 14","Progestágeno días 7, 10 y 13","84 días componente activo + 4 días placebo"],a:0},
+{t:9,r:"69(2025)",q:"¿Cuál fármaco para el cáncer de próstata produce el efecto llamarada?",o:["Agonistas LH (ISCH)","Antagonistas LH (ISCH)","Flutamida","Abiraterona"],a:0},
+{t:9,r:"70(2025)",q:"¿Cuál fármaco para la disfunción eréctil tiene efecto independiente del deseo sexual?",o:["Sildenafilo","Tadalafilo","PGE1 o alprostadilo","Todas las respuestas anteriores son correctas"],a:2},
+{t:9,r:"7(2023)",q:"¿Qué fármaco inhibe el último paso de la formación de la testosterona?",o:["Finasterida","Sildenafilo","Anastrozol","Leuprolida"],a:0},
+{t:9,r:"10(2023)",q:"¿Qué fármaco trata el hipotiroidismo?",o:["Metimazol","Yoduros","Levotiroxina","131I"],a:2},
+{t:9,r:"32(2023)",q:"El tamoxifeno tiene efecto antagonista estrogénico en:",o:["El hueso","El perfil lipídico","El cáncer de mama hormono-dependiente","El endometrio"],a:2},
+{t:9,r:"19(2023)",q:"Paciente con diabetes y nefropatía. ¿Qué fármaco está contraindicado?",o:["Insulina","Metformina","Pioglitazona","IDPP4"],a:1},
+{t:9,r:"20(2023)",q:"La semaglutida es:",o:["Agonista de GLP1","IDPP4","ISGLT2","Sulfonilurea"],a:0},
+{t:9,r:"21(2023)",q:"En el tratamiento de diabetes, ¿cuál es la insulina más rápida?",o:["Insulina ultrarrápida","Prolongada","Intermedia","Regular"],a:0},
+{t:9,r:"22(2023)",q:"¿Cuál es el objetivo de alternar glucocorticoides con otros fármacos?",o:["Prolongar la acción","Aumentar la eficacia en enfermedades crónicas","Favorecer la recuperación del eje hipotálamo-hipofisario","Favorecer cumplimiento terapéutico"],a:2},
+{t:9,r:"23(2023)",q:"Señale la FALSA sobre los glucocorticoides:",o:["Secreción regulada por ACTH","Receptores intracelulares","Activan IL-2","Síntesis de lipocortina"],a:2},
+{t:9,r:"24(2023)",q:"Contraindicación de glucocorticoides:",o:["Asma bronquial","Cardíaca congestiva","Enfermedad reumática","Vómitos por quimioterapia"],a:1},
+{t:9,r:"34(2022)",q:"Para tratar el hipertiroidismo, empleamos:",o:["Tionamidas","Yoduros","131I","Todas son correctas"],a:3},
+{t:9,r:"35(2022)",q:"Para tratar el hipotiroidismo, empleamos:",o:["Metimazol","Levotiroxina","B-bloqueantes adrenérgicos","Yoduros"],a:1},
+{t:9,r:"36(2022)",q:"Aumenta la formación de hueso en la osteoporosis:",o:["Bifosfonatos","Teriparatida","Denosumab","Raloxifeno"],a:1},
+{t:9,r:"37(2022)",q:"¿Cuál impide la unión de los osteoclastos a análogos del pirofosfato?",o:["Denosumab","Teriparatida","Bifosfonatos","Ranelato de estroncio"],a:2},
+{t:9,r:"38(2022)",q:"El tamoxifeno:",o:["Es un antagonista estrogénico en el cáncer de mama hormono-dependiente","Presenta actividad agonista estrogénico en hueso y endometrio","Aumenta la producción del TGF-β","Todas son correctas"],a:3},
+{t:9,r:"39(2022)",q:"Es un anticonceptivo postcoital:",o:["Levonorgestrel + estrógenos","Levonorgestrel","Ulipristal","Todas son correctas"],a:3},
+{t:9,r:"40(2022)",q:"Antiandrógenos inhiben enzima:",o:["5-alfa-reductasa (finasterida)","PDE V (sildenafilo)","Aromatasa (anastrozol)","A y C son correctas"],a:3},
+{t:9,r:"94(2022)",q:"Paciente obeso con diabetes tipo 2 controlable con dieta. ¿Qué tratamiento iniciar?",o:["Insulina","Sitagliptina","Glibenclamida","Metformina"],a:3},
+{t:9,r:"10(2021)",q:"El tamoxifeno tiene efecto antagonista estrogénico en:",o:["Carcinoma de mama","Hueso","Endometrio","Perfil lipídico"],a:0},
+{t:9,r:"24(2021)",q:"¿Qué fármacos en osteoporosis son análogos del pirofosfato que se incorporan a la matriz ósea?",o:["Denosumab","Teriparatida","Bifosfonatos","Ranelato de estroncio"],a:2},
+{t:9,r:"49(2021)",q:"Todas las afirmaciones sobre glucocorticoides son correctas, EXCEPTO:",o:["Pueden producir úlceras pépticas","Se emplean en el tratamiento de la enfermedad de Addison","Ejercen sus efectos al unirse a receptores situados en la membrana celular","Ninguna de las anteriores"],a:2},
+{t:9,r:"50(2021)",q:"Respecto a las reacciones adversas de los glucocorticoides, una de las siguientes es FALSA:",o:["Pueden producir atrofia suprarrenal","Aumentan la presión intraocular","Favorecen la aparición de infecciones","Aumentan la proliferación de fibroblastos"],a:3},
+{t:9,r:"62(2021)",q:"Paciente obeso con diabetes tipo 2 controlable con dieta. ¿Qué tratamiento iniciar?",o:["Insulina","Sitagliptina","Glibenclamida","Metformina"],a:3},
+// PARTE X
+{t:10,r:"71(2025)",q:"¿Cuál de los siguientes fármacos es un inmunosupresor inhibidor de calcineurina?",o:["Tacrólimo","Azatioprina","Metotrexato","Todas las respuestas anteriores son correctas"],a:0},
+{t:10,r:"72(2025)",q:"¿Cuál de los siguientes antineoplásicos forma enlaces cruzados entre cadenas de ADN?",o:["Agentes alquilantes","Antimetabolitos","Antibióticos citotóxicos","Antimitóticos"],a:0},
+{t:10,r:"73(2025)",q:"¿Cuál de los siguientes antineoplásicos NO se incluye en la categoría de inhibidores de pequeñas moléculas?",o:["Inhibidores Tirosin-cinasa del EGFR","Inhibidores Tirosin-cinasa del HER2","Inhibidores del Proteasoma","Metotrexato"],a:3},
+{t:10,r:"41(2022)",q:"¿Cuál de los siguientes inmunosupresores son inhibidores de la síntesis o acción de IL-2?",o:["Inhibidores de la calcineurina","Inhibidores de m-Tor","Sirolimus","Todas las opciones son correctas"],a:3},
+{t:10,r:"42(2022)",q:"Inmunosupresor inhibidor de la calcineurina:",o:["Glucocorticoides","Ciclosporina","Antiproliferativo","Azatioprina"],a:1},
+{t:10,r:"43(2022)",q:"Los efectos de los antitumorales citotóxicos clásicos son:",o:["Depresión en la médula ósea","Alteraciones en la cicatrización","Esterilidad","Todas son correctas"],a:3},
+{t:10,r:"44(2022)",q:"¿Cuál de los siguientes antitumorales es un anticuerpo monoclonal frente al receptor tipo 2 del EGF?",o:["Trastuzumab","Fluoracilo","Imatinib","Docetaxel"],a:0},
+{t:10,r:"32(2021)",q:"¿Qué fármaco antitumoral actúa como antimetabolito antagonista del folato?",o:["Metotrexato","Imatinib","Bevacizumab","Trastuzumab"],a:0},
+{t:10,r:"33(2021)",q:"¿Cuál de los siguientes antitumorales es un anticuerpo monoclonal frente al receptor tipo 2 del EGF (tratamiento mama)?",o:["Trastuzumab","Imatinib","Bevacizumab","Todas son ciertas"],a:0},
+{t:10,r:"34(2021)",q:"¿Cuál de los siguientes inmunosupresores son inhibidores de la síntesis o acción IL-2?",o:["Inhibidores de la calcineurina","Inhibidores de m-Tor","Sirolimus","Todas las opciones anteriores son correctas"],a:3},
+{t:10,r:"35(2021)",q:"¿Cuál de los siguientes inmunosupresores es un inhibidor de calcineurina?",o:["Sirólimus","Ciclosporina","Azatioprina","Todas las opciones anteriores son correctas"],a:1},
+// PARTE XI
+{t:11,r:"22(2025)",q:"Una buena elección en infecciones por Gram positivos en pacientes alérgicos a la penicilina son los:",o:["Glucopéptidos","Macrólidos","Lincosamidas","Carbapenemes"],a:1},
+{t:11,r:"23(2025)",q:"La mupirocina es un fármaco que se utiliza en el tratamiento de:",o:["Infecciones cutáneas","Infecciones respiratorias","Infecciones del aparato digestivo","Infecciones del tracto urinario"],a:0},
+{t:11,r:"74(2025)",q:"¿Cuál es CORRECTA sobre el tratamiento de la infección por HIV?",o:["No hay que iniciar el tratamiento hasta que se haga evidente la inmunodeficiencia","No hay que iniciarlo hasta que haya una importante carga viral","La HAART se basa en el empleo de un solo fármaco antirretroviral","El Lenacapavir puede prevenir el contagio por HIV"],a:3},
+{t:11,r:"75(2025)",q:"¿Cuál fármaco antituberculoso es inactivo a pH neutro pero tuberculicida a pH ácido?",o:["Rifampicina","Isoniazida","Etambutol","Pirazinamida"],a:3},
+{t:11,r:"76(2025)",q:"Se dice que un paciente tiene tuberculosis multirresistente (MDR-TB) cuando tiene resistencia a:",o:["A un solo antituberculoso de primera línea y otro de segunda línea","A más de un antituberculoso de primera línea que no sea la isoniazida y la rifampicina","Al menos a la isoniazida y a la rifampicina","Resistencia a la rifampicina y a las quinolonas"],a:2},
+{t:11,r:"19(2023)",q:"La pauta terapéutica habitual de una tuberculosis incluye:",o:["Isoniazida + Rifampicina + Pirazinamida","Rifampicina + Estreptomicina","Isoniazida + Etambutol","Rifampicina + Etambutol + Pirazinamida"],a:0},
+{t:11,r:"25a(2023)",q:"¿Cuál de los siguientes NO es un mecanismo de acción de fármacos antivirales?",o:["Inhibición de la enzima integrasa vírica","Inhibición de la enzima transcriptasa inversa","Aumento de la enzima proteasa","Inhibición de la enzima ADN polimerasa"],a:2},
+{t:11,r:"25b(2023)",q:"¿Qué fármaco causa inflamación del tendón de Aquiles?",o:["Eritromicina","Amoxicilina","Ciprofloxacina","Sulfametoxazol"],a:2},
+{t:11,r:"26(2023)",q:"Tratamiento de cistitis no complicada:",o:["Nitrofurantoína","Amoxicilina","Ciprofloxacino","Fosfomicina"],a:3},
+{t:11,r:"45(2022)",q:"Tratamiento de la tuberculosis:",o:["Estreptomicina + isoniazida + Etambutol","Isoniazida + Rifampicina","Isoniazida + Rifampicina + pirazinamida","Ninguna es correcta"],a:2},
+{t:11,r:"46(2022)",q:"¿Cuál de los siguientes antituberculosos puede producir neurotoxicidad por depleción de piridoxina (vitamina B6)?",o:["Rifampicina","Isoniazida","Pirazinamida","Etambutol"],a:1},
+{t:11,r:"47(2022)",q:"Fármacos antivirales que alteran la replicación viral:",o:["Inhibidores de la proteasa","Inhibidores de la integrasa","Inhibidores de la transcriptasa","Todas son correctas"],a:3},
+{t:11,r:"48(2022)",q:"¿Cuál es correcta sobre el tratamiento de la infección por VIH?",o:["Reducir la concentración del virus en plasma al máximo y durante el mayor tiempo posible","Es necesario combinar al menos 3 fármacos antiretrovirales","Hay que iniciar el tratamiento antes de que se haga evidente la inmunodeficiencia","Todas son ciertas"],a:3},
+{t:11,r:"49(2022)",q:"Posible mecanismo de acción de los antifúngicos:",o:["Interferencia en la síntesis de ergosterol","Interferencia en la síntesis de glucanos","Alteración en la síntesis de ácidos nucleicos","Todas son verdaderas"],a:3},
+{t:11,r:"50(2022)",q:"Fármacos antipalúdicos:",o:["Artemer","Doxiciclina","Atovacuona","Todas son correctas"],a:3},
+{t:11,r:"99(2022)",q:"¿Cuál es el medicamento que produce la tendinitis de Aquiles?",o:["Zithromax","Amoxicilina","Ciprofloxacino","Sulfametoxazol"],a:2},
+{t:11,r:"100(2022)",q:"En el tratamiento de una cistitis no complicada de primera aparición, utilizaremos de primera elección:",o:["Nitrofurantoína","Amoxicilina","Ciprofloxacino","Fosfomicina"],a:3},
+{t:11,r:"12(2021)",q:"¿Cuál de los siguientes antituberculosos es potencialmente hepatotóxico?",o:["Todas correctas (rifampicina + isoniazida + pirazinamida)","Solo la rifampicina","Solo la isoniazida","Solo la pirazinamida"],a:0},
+{t:11,r:"26(2021)",q:"¿Cuál fármaco antituberculoso tiñe de rojo-naranja la orina?",o:["Isoniazida","Rifampicina","Pirazinamida","Etambutol"],a:1},
+{t:11,r:"28(2021)",q:"¿Cuál de los siguientes es un posible mecanismo de acción de los fármacos antifúngicos?",o:["Interferencia en la síntesis del ergosterol","Interferencia en la síntesis de glucanos","Alteración en la síntesis de ácidos nucleicos","Todas las opciones anteriores son correctas"],a:3},
+{t:11,r:"31(2021)",q:"¿Cuál de los siguientes fármacos es un antipalúdico?",o:["Artemeter","Doxiciclina","Quinidina","Todas las opciones anteriores son correctas"],a:3},
+{t:11,r:"86(2021)",q:"En el tratamiento de una cistitis no complicada de primera aparición utilizaremos:",o:["Nitrofurantoína","Amoxicilina","Ciprofloxacino","Fosfomicina"],a:3},
+{t:11,r:"87(2021)",q:"Con el uso de las quinolonas puede aparecer como posible reacción adversa:",o:["Tendinitis","Artropatías","Lesiones oculares","Todas son incorrectas"],a:0}
+];
+// Combine all question arrays
+const ALL_Q=[...Q,...Q2,...Q3,...Q4,...Q5,...Q6];
+
+let queue=[],current=null,answered=false,cntOk=0,cntKo=0,cntTot=0,currentTemaId=null;
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function buildTemaGrid(){
+  const grid=document.getElementById('tema-grid');
+  grid.innerHTML='';
+  TEMAS.forEach(t=>{
+    const count=ALL_Q.filter(p=>p.t===t.id).length;
+    const btn=document.createElement('button');
+    btn.className='tema-btn';
+    btn.innerHTML=`<span class="tema-num">${t.id}</span><div><div class="tema-name">${t.name}</div><div class="tema-count">${count} preguntas</div></div>`;
+    btn.onclick=()=>startQuiz(t.id);
+    grid.appendChild(btn);
+  });
+}
+
+function startQuiz(temaId){
+  currentTemaId=temaId;
+  const pool=temaId==='todos'?[...ALL_Q]:ALL_Q.filter(p=>p.t===temaId);
+  queue=shuffle([...pool]);
+  cntOk=0;cntKo=0;cntTot=0;
+  document.getElementById('tema-screen').style.display='none';
+  document.getElementById('result-screen').style.display='none';
+  document.getElementById('quiz-screen').style.display='block';
+  updateCounters();
+  nextQuestion();
+}
+
+function retryTema(){startQuiz(currentTemaId)}
+
+function nextQuestion(){
+  if(queue.length===0){showResults();return}
+  current=queue.shift();
+  answered=false;
+  const tema=TEMAS.find(t=>t.id===current.t);
+  document.getElementById('quiz-tema-label').textContent=`Parte ${current.t} · ${tema?tema.name:''}`;
+  document.getElementById('quiz-ref').textContent=`Ref: ${current.r}`;
+  document.getElementById('question-text').textContent=current.q;
+  const opts=document.getElementById('options-container');
+  opts.innerHTML='';
+  const letters=['a','b','c','d','e'];
+  current.o.forEach((opt,i)=>{
+    const btn=document.createElement('button');
+    btn.className='option-btn';
+    btn.innerHTML=`<span class="option-letter">${letters[i]})</span><span>${opt}</span>`;
+    btn.onclick=()=>selectAnswer(i);
+    opts.appendChild(btn);
+  });
+  const fb=document.getElementById('feedback-box');
+  fb.className='feedback-box';
+  fb.textContent='';
+  document.getElementById('btn-next').className='btn-next';
+  document.getElementById('btn-stop').className='btn-stop show';
+  updateProgress();
+}
+
+function selectAnswer(idx){
+  if(answered)return;
+  answered=true;
+  cntTot++;
+  const btns=document.querySelectorAll('.option-btn');
+  btns.forEach(b=>b.disabled=true);
+  const correct=current.a;
+  btns[correct].classList.add('correct');
+  const fb=document.getElementById('feedback-box');
+  if(idx===correct){
+    cntOk++;
+    btns[idx].classList.add('correct');
+    fb.className='feedback-box correct-fb show';
+    fb.innerHTML='<strong>✓ ¡Correcto!</strong>';
+  } else {
+    cntKo++;
+    btns[idx].classList.add('wrong');
+    const letters=['a','b','c','d','e'];
+    fb.className='feedback-box wrong-fb show';
+    fb.innerHTML=`<strong>✗ Incorrecto</strong>La respuesta correcta es: <b>${letters[correct]}) ${current.o[correct]}</b>`;
+  }
+  updateCounters();
+  document.getElementById('btn-next').className='btn-next show';
+  document.getElementById('btn-next').textContent=queue.length>0?'Siguiente →':'Ver resultados';
+}
+
+function updateCounters(){
+  document.getElementById('cnt-ok').textContent=cntOk;
+  document.getElementById('cnt-ko').textContent=cntKo;
+  document.getElementById('cnt-tot').textContent=cntTot;
+}
+
+function updateProgress(){
+  const total=ALL_Q.filter(p=>currentTemaId==='todos'||p.t===currentTemaId).length;
+  const pct=total>0?Math.min(100,(cntTot/total)*100):0;
+  document.getElementById('progress-fill').style.width=pct+'%';
+}
+
+function showResults(){
+  document.getElementById('quiz-screen').style.display='none';
+  document.getElementById('result-screen').style.display='block';
+  const pct=cntTot>0?Math.round((cntOk/cntTot)*100):0;
+  document.getElementById('res-pct').textContent=pct+'%';
+  document.getElementById('res-ok').textContent=cntOk;
+  document.getElementById('res-ko').textContent=cntKo;
+  document.getElementById('res-tot').textContent=cntTot;
+}
+
+function goHome(){
+  document.getElementById('quiz-screen').style.display='none';
+  document.getElementById('result-screen').style.display='none';
+  document.getElementById('tema-screen').style.display='block';
+}
+
+buildTemaGrid();
+</script>
+</body>
+</html>
